@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Art Tanzania - Admin Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="light-mode">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="logo-container">
+            <img src="S&T LOGO3-01.jpg" alt="Master Art Tanzania Logo" class="logo">
+        </div>
+        <ul class="nav-links">
+            <li class="active">
+                <a href="#dashboard"><i class="fas fa-home"></i> Dashboard</a>
+            </li>
+            <li>
+                <a href="#gallery"><i class="fas fa-images"></i> Gallery</a>
+            </li>
+            <li>
+                <a href="#access-codes"><i class="fas fa-key"></i> Access Codes</a>
+            </li>
+            <li>
+                <a href="#clients"><i class="fas fa-users"></i> Clients</a>
+            </li>
+            <li>
+                <a href="#analytics"><i class="fas fa-chart-bar"></i> Analytics</a>
+            </li>
+            <li>
+                <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+            </li>
+        </ul>
+        <div class="theme-toggle">
+            <i class="fas fa-moon"></i>
+            <span>Dark Mode</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search...">
+            </div>
+            <div class="user-menu">
+                <div class="notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </div>
+                <div class="profile">
+                    <img src="profile-placeholder.jpg" alt="Profile">
+                    <span>Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Overview -->
+        <section class="dashboard-section active" id="dashboard-section">
+            <h1>Dashboard Overview</h1>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-eye"></i>
+                    <div class="stat-info">
+                        <h3>Total Views</h3>
+                        <p data-stat="views">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-key"></i>
+                    <div class="stat-info">
+                        <h3>Active Codes</h3>
+                        <p data-stat="codes">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-images"></i>
+                    <div class="stat-info">
+                        <h3>Total Images</h3>
+                        <p data-stat="images">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-users"></i>
+                    <div class="stat-info">
+                        <h3>Active Users</h3>
+                        <p data-stat="users">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+                <h2>Recent Activity</h2>
+                <div class="activity-list">
+                    <!-- Activity items will be dynamically added here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Management -->
+        <section class="gallery-section" id="gallery-section">
+            <h1>Gallery Management</h1>
+            <div class="gallery-controls">
+                <button class="primary-button" onclick="openUploadModal()">
+                    <i class="fas fa-upload"></i> Upload New Images
+                </button>
+                <div class="gallery-filters">
+                    <select id="categoryFilter" onchange="filterGallery()">
+                        <option value="all">All Categories</option>
+                        <option value="portraits">Portraits</option>
+                        <option value="landscapes">Landscapes</option>
+                        <option value="events">Events</option>
+                    </select>
+                    <select id="sortFilter" onchange="sortGallery()">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="popular">Most Viewed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="gallery-grid">
+                <!-- Gallery items will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Access Code Management -->
+        <section class="access-codes-section" id="access-codes-section">
+            <h1>Access Code Management</h1>
+            <div class="code-controls">
+                <button class="primary-button" onclick="generateAccessCode()">
+                    <i class="fas fa-plus"></i> Generate New Code
+                </button>
+                <div class="code-filters">
+                    <select id="statusFilter" onchange="filterAccessCodes()">
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                </div>
+            </div>
+            <div class="codes-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Access Code</th>
+                            <th>Created Date</th>
+                            <th>Expiry Date</th>
+                            <th>Status</th>
+                            <th>Uses</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Access codes will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Client Management Section -->
+        <section class="clients-section" id="clients-section">
+            <h1>Client Management</h1>
+            <div class="section-controls">
+                <button class="primary-button" onclick="openAddClientModal()">
+                    <i class="fas fa-user-plus"></i> Add New Client
+                </button>
+                <div class="search-filter">
+                    <input type="text" id="clientSearch" placeholder="Search clients...">
+                    <select id="clientStatusFilter">
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="clients-grid">
+                <!-- Clients will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Enhanced Analytics Section -->
+        <section class="analytics-section" id="analytics-section">
+            <h1>Analytics Dashboard</h1>
+            <div class="analytics-controls">
+                <div class="date-range-picker">
+                    <button class="control-btn" data-range="7">7 Days</button>
+                    <button class="control-btn" data-range="30">30 Days</button>
+                    <button class="control-btn" data-range="90">90 Days</button>
+                    <button class="control-btn" data-range="custom">Custom</button>
+                </div>
+                <button class="primary-button" onclick="analyticsFeatures.exportReport()">
+                    <i class="fas fa-download"></i> Export Report
+                </button>
+            </div>
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <h3>Views Over Time</h3>
+                    <canvas id="viewsChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Access Code Usage</h3>
+                    <canvas id="accessChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Popular Content</h3>
+                    <canvas id="contentChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Client Activity</h3>
+                    <canvas id="clientChart"></canvas>
+                </div>
+            </div>
+            <div class="analytics-tables">
+                <div class="table-section">
+                    <h3>Top Performing Content</h3>
+                    <table class="analytics-table">
+                        <thead>
+                            <tr>
+                                <th>Content</th>
+                                <th>Views</th>
+                                <th>Access Rate</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topContentTable">
+                            <!-- Data will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Enhanced Settings Section -->
+        <section class="settings-section" id="settings-section">
+            <h1>System Settings</h1>
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h3>Security Settings</h3>
+                    <div class="setting-group">
+                        <label>Two-Factor Authentication</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="twoFactorToggle">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label>Watermark Settings</label>
+                        <input type="text" id="watermarkText" placeholder="Watermark text">
+                        <input type="range" id="watermarkOpacity" min="0" max="100" value="50">
+                        <select id="watermarkPosition">
+                            <option value="center">Center</option>
+                            <option value="topleft">Top Left</option>
+                            <option value="bottomright">Bottom Right</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-card">
+                    <h3>Backup & Restore</h3>
+                    <button class="secondary-button" onclick="backupSystem.createBackup()">
+                        <i class="fas fa-download"></i> Create Backup
+                    </button>
+                    <div class="file-upload">
+                        <label for="restoreFile" class="secondary-button">
+                            <i class="fas fa-upload"></i> Restore from Backup
+                        </label>
+                        <input type="file" id="restoreFile" accept=".json" hidden>
+                    </div>
+                </div>
+                <div class="settings-card">
+                    <h3>Notification Settings</h3>
+                    <div class="setting-group">
+                        <label>Email Notifications</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="emailNotifyToggle">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label>Desktop Notifications</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="desktopNotifyToggle">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <h2>Upload Images</h2>
+            <div class="upload-area" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag and drop images here or click to select files</p>
+                <input type="file" multiple accept="image/*" id="fileInput" onchange="handleFileSelect()">
+            </div>
+            <div class="upload-preview">
+                <!-- Preview images will be shown here -->
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-button" onclick="closeUploadModal()">Cancel</button>
+                <button class="primary-button" onclick="uploadImages()">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Client Modal -->
+    <div class="modal" id="addClientModal">
+        <div class="modal-content">
+            <h2>Add New Client</h2>
+            <form id="addClientForm">
+                <div class="form-group">
+                    <label>Client Name</label>
+                    <input type="text" id="clientName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="clientEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Company</label>
+                    <input type="text" id="clientCompany">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="clientNotes"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="secondary-button" onclick="closeAddClientModal()">Cancel</button>
+                    <button type="submit" class="primary-button">Add Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="notification-toast" id="notificationToast"></div>
+
+    <!-- Add Chart.js before dashboard.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html> 
