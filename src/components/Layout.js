@@ -4,14 +4,31 @@ import { useRouter } from 'next/router';
 
 const Layout = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
   const isActive = (path) => router.pathname === path;
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
-    <div className={`min-h-screen flex ${isDarkMode ? 'dark' : ''}`}>
+    <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
+
       {/* Sidebar */}
-      <nav className="w-64 bg-white dark:bg-gray-800 shadow-lg fixed h-full">
+      <nav className={`
+        fixed top-0 left-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out z-30
+        lg:translate-x-0 lg:static lg:h-screen
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Show The Work</h1>
         </div>
@@ -93,18 +110,28 @@ const Layout = ({ children }) => {
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 ml-64">
+      <div className="flex-1 lg:ml-64">
         {/* Top Navigation */}
         <header className="bg-white dark:bg-gray-800 shadow-sm h-16 fixed w-full z-10">
-          <div className="flex items-center justify-between h-full px-6">
+          <div className="flex items-center justify-between h-full px-4 lg:px-6">
             <div className="flex items-center">
-              <div className="relative">
+              {/* Mobile menu button */}
+              <button
+                onClick={toggleSidebar}
+                className="p-2 rounded-md lg:hidden"
+              >
+                <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              
+              <div className="relative ml-4">
                 <input
                   type="text"
                   placeholder="Search..."
-                  className="w-64 pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full md:w-64 pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
                 />
-                <svg className="w-5 h-5 text-gray-500 dark:text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-500 dark:text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -120,14 +147,14 @@ const Layout = ({ children }) => {
               
               <div className="flex items-center space-x-2">
                 <img src="/profile-placeholder.jpg" alt="Profile" className="w-8 h-8 rounded-full" />
-                <span className="text-gray-700 dark:text-gray-300">Admin</span>
+                <span className="text-gray-700 dark:text-gray-300 hidden md:inline">Admin</span>
               </div>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="pt-16 p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
+        <main className="pt-16 p-4 lg:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
           {children}
         </main>
       </div>
