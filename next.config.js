@@ -2,11 +2,19 @@
 const nextConfig = {
     reactStrictMode: true,
     images: {
-        domains: ['res.cloudinary.com'], // Add any image domains you're using
+        domains: ['localhost'],
+        unoptimized: true,
     },
     env: {
         NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
         NEXT_PUBLIC_API_TIMEOUT: process.env.NEXT_PUBLIC_API_TIMEOUT,
+    },
+    webpack: (config) => {
+        config.module.rules.push({
+            test: /\.(png|jpg|gif|svg)$/i,
+            type: 'asset/resource'
+        });
+        return config;
     }
 };
 
