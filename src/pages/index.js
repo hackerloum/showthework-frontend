@@ -1,47 +1,46 @@
-import { useState, useEffect } from 'react';
-import { imagesService } from '../services';
+import React from 'react';
+import Layout from '../components/Layout';
+import Link from 'next/link';
 
-export default function Home() {
-  const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        const response = await imagesService.getPublic();
-        setImages(response.images);
-      } catch (error) {
-        console.error('Error loading images:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadImages();
-  }, []);
-
+const Home = () => {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8">Show The Work</h1>
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {images.map((image) => (
-            <div key={image._id} className="border rounded-lg overflow-hidden">
-              <img
-                src={image.url}
-                alt={image.title}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h2 className="text-xl font-semibold">{image.title}</h2>
-                <p className="text-gray-600">{image.description}</p>
-              </div>
-            </div>
-          ))}
+    <Layout>
+      <div className="max-w-3xl mx-auto text-center space-y-8">
+        <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">
+          Welcome to Show The Work
+        </h1>
+        <p className="text-xl text-gray-600">
+          A secure platform for sharing and viewing work with controlled access
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+          <Link href="/viewer">
+            <a className="block p-6 bg-white shadow-lg rounded-lg hover:shadow-xl transition-shadow">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">View Work</h2>
+              <p className="text-gray-600 mb-4">
+                Have an access code? Enter it here to view the work.
+              </p>
+              <span className="inline-flex items-center text-blue-600 hover:text-blue-700">
+                Enter Access Code →
+              </span>
+            </a>
+          </Link>
+
+          <Link href="/dashboard">
+            <a className="block p-6 bg-white shadow-lg rounded-lg hover:shadow-xl transition-shadow">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h2>
+              <p className="text-gray-600 mb-4">
+                Admin access to manage works and access codes.
+              </p>
+              <span className="inline-flex items-center text-blue-600 hover:text-blue-700">
+                Go to Dashboard →
+              </span>
+            </a>
+          </Link>
         </div>
-      )}
-    </div>
+      </div>
+    </Layout>
   );
-} 
+};
+
+export default Home; 
