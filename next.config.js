@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    output: 'export',
     images: {
-        domains: ['localhost'],
         unoptimized: true,
+        domains: ['localhost']
     },
     env: {
         NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
@@ -16,13 +17,7 @@ const nextConfig = {
         });
         return config;
     },
-    // Add output configuration for static exports
-    output: 'export',
-    // Disable server-side features when exporting
     trailingSlash: true,
-    images: {
-        unoptimized: true,
-    },
     pageExtensions: ['js', 'jsx', 'ts', 'tsx']
 };
 
