@@ -16,6 +16,13 @@ const nextConfig = {
         });
         return config;
     },
+    // Add output configuration for static exports
+    output: 'export',
+    // Disable server-side features when exporting
+    trailingSlash: true,
+    images: {
+        unoptimized: true,
+    },
     pageExtensions: ['js', 'jsx', 'ts', 'tsx']
 };
 
