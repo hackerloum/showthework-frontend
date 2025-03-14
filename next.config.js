@@ -15,7 +15,8 @@ const nextConfig = {
             type: 'asset/resource'
         });
         return config;
-    }
+    },
+    pageExtensions: ['js', 'jsx', 'ts', 'tsx']
 };
 
 module.exports = nextConfig; 
