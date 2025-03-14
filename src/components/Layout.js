@@ -13,6 +13,10 @@ const Layout = ({ children }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const handleAddNewWork = () => {
+    router.push('/gallery/new');
+  };
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
       {/* Mobile Sidebar Overlay */}
@@ -31,7 +35,11 @@ const Layout = ({ children }) => {
       `}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Show The Work</h1>
+            <Link href="/">
+              <a className="text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                Show The Work
+              </a>
+            </Link>
             <button
               onClick={toggleSidebar}
               className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
@@ -77,18 +85,6 @@ const Layout = ({ children }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
                 Access Codes
-              </a>
-            </Link>
-          </li>
-          <li>
-            <Link href="/clients">
-              <a className={`flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                isActive('/clients') ? 'bg-blue-50 dark:bg-gray-700' : ''
-              }`}>
-                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                Clients
               </a>
             </Link>
           </li>
