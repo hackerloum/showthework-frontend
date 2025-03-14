@@ -7,6 +7,8 @@ const NewWork = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(null);
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
@@ -50,6 +52,8 @@ const NewWork = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
+    setSuccess(null);
 
     try {
       const formData = new FormData();
@@ -59,19 +63,33 @@ const NewWork = () => {
         formData.append('files', file);
       });
 
-      // TODO: Replace with your actual API endpoint
-      const response = await fetch('/api/works', {
+      const response = await fetch('/.netlify/functions/upload', {
         method: 'POST',
         body: formData,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to upload work');
+        throw new Error(data.error || 'Failed to upload work');
       }
 
-      router.push('/gallery');
+      setSuccess({
+        message: data.message,
+        accessCode: data.work.accessCode,
+      });
+
+      // Clear form
+      e.target.reset();
+      setFiles([]);
+
+      // Redirect to gallery after 5 seconds
+      setTimeout(() => {
+        router.push('/gallery');
+      }, 5000);
     } catch (error) {
       console.error('Error uploading work:', error);
+      setError(error.message || 'Failed to upload work. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -96,6 +114,25 @@ const NewWork = () => {
             <div className="p-6">
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Add New Work</h1>
               
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                </div>
+              )}
+
+              {success && (
+                <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                  <p className="text-sm text-green-600 dark:text-green-400">{success.message}</p>
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Access Code:</p>
+                    <p className="mt-1 text-lg font-mono font-bold text-gray-900 dark:text-white">{success.accessCode}</p>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Save this code! You'll need it to share your work. Redirecting to gallery in 5 seconds...
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
