@@ -1,14 +1,20 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 
 const NewWork = () => {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
+
+  // Fix hydration issues by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
@@ -42,6 +48,10 @@ const NewWork = () => {
       return isValidType && isValidSize;
     });
 
+    if (validFiles.length !== newFiles.length) {
+      setError('Some files were skipped. Only JPG, PNG, and PDF files up to 10MB are allowed.');
+    }
+
     setFiles(prevFiles => [...prevFiles, ...validFiles]);
   };
 
@@ -51,16 +61,21 @@ const NewWork = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (files.length === 0) {
+      setError('Please upload at least one file.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
     setSuccess(null);
 
     try {
       const formData = new FormData();
-      formData.append('title', e.target.title.value);
-      formData.append('description', e.target.description.value);
-      files.forEach(file => {
-        formData.append('files', file);
+      formData.append('title', e.target.title.value.trim());
+      formData.append('description', e.target.description.value.trim());
+      files.forEach((file, index) => {
+        formData.append(`file-${index}`, file);
       });
 
       const response = await fetch('/.netlify/functions/upload', {
@@ -68,11 +83,12 @@ const NewWork = () => {
         body: formData,
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         throw new Error(data.error || 'Failed to upload work');
       }
+
+      const data = await response.json();
 
       setSuccess({
         message: data.message,
@@ -90,9 +106,14 @@ const NewWork = () => {
     } catch (error) {
       console.error('Error uploading work:', error);
       setError(error.message || 'Failed to upload work. Please try again.');
+    } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <Layout>
@@ -100,6 +121,7 @@ const NewWork = () => {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 py-8">
           <div className="mb-8">
             <button
+              type="button"
               onClick={() => router.push('/gallery')}
               className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
@@ -163,7 +185,7 @@ const NewWork = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="files" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Upload Files
                   </label>
                   <div
@@ -218,7 +240,7 @@ const NewWork = () => {
                   {files.length > 0 && (
                     <ul className="mt-4 space-y-2">
                       {files.map((file, index) => (
-                        <li key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                        <li key={`${file.name}-${index}`} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-md">
                           <div className="flex items-center">
                             <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -243,26 +265,12 @@ const NewWork = () => {
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || files.length === 0}
                     className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${
-                      isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                      (isSubmitting || files.length === 0) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
-                    {isSubmitting ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        Creating...
-                      </>
-                    ) : (
-                      'Create Work'
-                    )}
+                    {isSubmitting ? 'Uploading...' : 'Upload Work'}
                   </button>
                 </div>
               </form>
