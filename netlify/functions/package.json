@@ -5,6 +5,7 @@
     "busboy": "^1.6.0",
     "cloudinary": "^2.6.0",
     "formidable": "^3.5.1",
-    "mongoose": "^8.12.1"
+    "mongoose": "^8.12.1",
+    "googleapis": "^128.0.0"
   }
 } 
