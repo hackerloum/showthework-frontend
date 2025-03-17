@@ -2,6 +2,8 @@ const formidable = require('formidable');
 const { v2: cloudinary } = require('cloudinary');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+const busboy = require('busboy');
+const { Readable } = require('stream');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -25,12 +27,12 @@ const mongoUri = MONGODB_URI.includes('/?')
 const mongoOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 10000, // Increased timeout for replica sets
+  serverSelectionTimeoutMS: 10000,
   socketTimeoutMS: 45000,
   keepAlive: true,
   keepAliveInitialDelay: 300000,
   retryWrites: true,
-  w: 'majority', // Write concern for replica sets
+  w: 'majority',
   maxPoolSize: 10,
   minPoolSize: 5,
 };
@@ -111,6 +113,51 @@ async function connectToDatabase(retries = 3) {
   }
 }
 
+// Parse multipart form data
+function parseMultipartForm(event) {
+  return new Promise((resolve, reject) => {
+    const fields = {};
+    const files = [];
+    
+    const bb = busboy({ 
+      headers: event.headers,
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+        files: 10
+      }
+    });
+
+    bb.on('file', (name, file, info) => {
+      const chunks = [];
+      file.on('data', data => chunks.push(data));
+      file.on('end', () => {
+        files.push({
+          fieldname: name,
+          buffer: Buffer.concat(chunks),
+          filename: info.filename,
+          encoding: info.encoding,
+          mimetype: info.mimeType
+        });
+      });
+    });
+
+    bb.on('field', (name, val) => {
+      fields[name] = val;
+    });
+
+    bb.on('finish', () => {
+      resolve({ fields, files });
+    });
+
+    bb.on('error', err => {
+      reject(new Error(`Failed to parse form: ${err.message}`));
+    });
+
+    const stream = Readable.from(Buffer.from(event.body, 'base64'));
+    stream.pipe(bb);
+  });
+}
+
 exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
@@ -142,25 +189,10 @@ exports.handler = async (event, context) => {
     await connectToDatabase();
     dbConnection = true;
 
-    // Rest of your existing code...
-    const form = formidable({
-      maxFiles: 10,
-      maxFileSize: 10 * 1024 * 1024,
-      keepExtensions: true,
-      multiples: true,
-    });
+    // Parse the multipart form data
+    const { fields, files } = await parseMultipartForm(event);
 
-    const [fields, files] = await new Promise((resolve, reject) => {
-      form.parse(event, (err, fields, files) => {
-        if (err) {
-          console.error('Form parsing error:', err);
-          reject(err);
-        }
-        resolve([fields, files]);
-      });
-    });
-
-    if (!files || Object.keys(files).length === 0) {
+    if (!files || files.length === 0) {
       return {
         statusCode: 400,
         headers,
@@ -168,9 +200,10 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const uploadPromises = Object.values(files).map(async (file) => {
+    // Upload files to Cloudinary
+    const uploadPromises = files.map(async (file) => {
       try {
-        const result = await cloudinary.uploader.upload(file.filepath, {
+        const result = await cloudinary.uploader.upload(file.buffer, {
           resource_type: 'auto',
           folder: 'show-the-work',
         });
@@ -179,16 +212,17 @@ exports.handler = async (event, context) => {
           url: result.secure_url,
           publicId: result.public_id,
           type: file.mimetype,
-          name: file.originalFilename,
+          name: file.filename,
         };
       } catch (error) {
         console.error('Cloudinary upload error:', error);
-        throw new Error(`Failed to upload file ${file.originalFilename}`);
+        throw new Error(`Failed to upload file ${file.filename}`);
       }
     });
 
     const uploadedFiles = await Promise.all(uploadPromises);
 
+    // Generate unique access code
     let accessCode;
     let isUnique = false;
     let attempts = 0;
@@ -207,6 +241,7 @@ exports.handler = async (event, context) => {
       throw new Error('Failed to generate unique access code');
     }
 
+    // Create new work in database
     const work = new Work({
       title: fields.title || 'Untitled',
       description: fields.description || '',
