@@ -10,6 +10,31 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Validate MongoDB URI
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  throw new Error('MONGODB_URI environment variable is not defined');
+}
+
+// Ensure the URI includes a database name
+const mongoUri = MONGODB_URI.includes('/?') 
+  ? MONGODB_URI.replace('/?', '/showthework?')
+  : MONGODB_URI + '/showthework';
+
+// MongoDB connection options
+const mongoOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 10000, // Increased timeout for replica sets
+  socketTimeoutMS: 45000,
+  keepAlive: true,
+  keepAliveInitialDelay: 300000,
+  retryWrites: true,
+  w: 'majority', // Write concern for replica sets
+  maxPoolSize: 10,
+  minPoolSize: 5,
+};
+
 // MongoDB Work Schema
 const workSchema = new mongoose.Schema({
   title: String,
@@ -39,6 +64,10 @@ const workSchema = new mongoose.Schema({
   },
 });
 
+// Add indexes for better performance
+workSchema.index({ accessCode: 1 }, { unique: true });
+workSchema.index({ createdAt: -1 });
+
 let Work;
 try {
   Work = mongoose.model('Work');
@@ -49,6 +78,37 @@ try {
 // Generate a random access code
 function generateAccessCode() {
   return crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
+// MongoDB connection function with retry logic
+async function connectToDatabase(retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      // Check if we already have a connection
+      if (mongoose.connections[0].readyState === 1) {
+        console.log('Using existing MongoDB connection');
+        return;
+      }
+
+      // Close any existing connection that might be in a bad state
+      if (mongoose.connections[0].readyState !== 0) {
+        await mongoose.connection.close();
+      }
+
+      // Create new connection
+      console.log(`Creating new MongoDB connection (attempt ${attempt}/${retries})...`);
+      await mongoose.connect(mongoUri, mongoOptions);
+      console.log('Successfully connected to MongoDB');
+      return;
+    } catch (error) {
+      console.error(`MongoDB connection attempt ${attempt} failed:`, error);
+      if (attempt === retries) {
+        throw new Error(`Failed to connect to MongoDB after ${retries} attempts: ${error.message}`);
+      }
+      // Wait before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempt), 5000)));
+    }
+  }
 }
 
 exports.handler = async (event, context) => {
@@ -76,28 +136,16 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Connect to MongoDB
+  let dbConnection = false;
   try {
-    if (!mongoose.connections[0].readyState) {
-      await mongoose.connect(process.env.MONGODB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-    }
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Database connection failed' }),
-    };
-  }
+    // Connect to MongoDB with retries
+    await connectToDatabase();
+    dbConnection = true;
 
-  try {
-    // Parse the multipart form data
+    // Rest of your existing code...
     const form = formidable({
       maxFiles: 10,
-      maxFileSize: 10 * 1024 * 1024, // 10MB
+      maxFileSize: 10 * 1024 * 1024,
       keepExtensions: true,
       multiples: true,
     });
@@ -120,7 +168,6 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Upload files to Cloudinary
     const uploadPromises = Object.values(files).map(async (file) => {
       try {
         const result = await cloudinary.uploader.upload(file.filepath, {
@@ -142,7 +189,6 @@ exports.handler = async (event, context) => {
 
     const uploadedFiles = await Promise.all(uploadPromises);
 
-    // Generate a unique access code
     let accessCode;
     let isUnique = false;
     let attempts = 0;
@@ -161,7 +207,6 @@ exports.handler = async (event, context) => {
       throw new Error('Failed to generate unique access code');
     }
 
-    // Create new work in database
     const work = new Work({
       title: fields.title || 'Untitled',
       description: fields.description || '',
@@ -194,5 +239,15 @@ exports.handler = async (event, context) => {
         details: error.message
       }),
     };
+  } finally {
+    // Only close the connection if we successfully opened one
+    if (dbConnection && mongoose.connection.readyState !== 0) {
+      try {
+        await mongoose.connection.close();
+        console.log('MongoDB connection closed');
+      } catch (error) {
+        console.error('Error closing MongoDB connection:', error);
+      }
+    }
   }
 }; 
