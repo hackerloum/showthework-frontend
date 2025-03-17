@@ -1,0 +1,10 @@
+{
+  "name": "show-the-work-functions",
+  "version": "1.0.0",
+  "dependencies": {
+    "busboy": "^1.6.0",
+    "cloudinary": "^2.6.0",
+    "formidable": "^3.5.1",
+    "mongoose": "^8.12.1"
+  }
+} 
