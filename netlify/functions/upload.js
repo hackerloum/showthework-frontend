@@ -52,47 +52,92 @@ function generateAccessCode() {
 }
 
 exports.handler = async (event, context) => {
+  // Enable CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers,
+      body: '',
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers,
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
   // Connect to MongoDB
-  if (!mongoose.connections[0].readyState) {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+  try {
+    if (!mongoose.connections[0].readyState) {
+      await mongoose.connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+    }
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ error: 'Database connection failed' }),
+    };
   }
 
   try {
+    // Parse the multipart form data
     const form = formidable({
       maxFiles: 10,
       maxFileSize: 10 * 1024 * 1024, // 10MB
+      keepExtensions: true,
+      multiples: true,
     });
 
     const [fields, files] = await new Promise((resolve, reject) => {
       form.parse(event, (err, fields, files) => {
-        if (err) reject(err);
+        if (err) {
+          console.error('Form parsing error:', err);
+          reject(err);
+        }
         resolve([fields, files]);
       });
     });
 
+    if (!files || Object.keys(files).length === 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'No files uploaded' }),
+      };
+    }
+
     // Upload files to Cloudinary
     const uploadPromises = Object.values(files).map(async (file) => {
-      const result = await cloudinary.uploader.upload(file.filepath, {
-        resource_type: 'auto',
-        folder: 'show-the-work',
-      });
+      try {
+        const result = await cloudinary.uploader.upload(file.filepath, {
+          resource_type: 'auto',
+          folder: 'show-the-work',
+        });
 
-      return {
-        url: result.secure_url,
-        publicId: result.public_id,
-        type: file.mimetype,
-        name: file.originalFilename,
-      };
+        return {
+          url: result.secure_url,
+          publicId: result.public_id,
+          type: file.mimetype,
+          name: file.originalFilename,
+        };
+      } catch (error) {
+        console.error('Cloudinary upload error:', error);
+        throw new Error(`Failed to upload file ${file.originalFilename}`);
+      }
     });
 
     const uploadedFiles = await Promise.all(uploadPromises);
@@ -100,18 +145,26 @@ exports.handler = async (event, context) => {
     // Generate a unique access code
     let accessCode;
     let isUnique = false;
-    while (!isUnique) {
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!isUnique && attempts < maxAttempts) {
       accessCode = generateAccessCode();
       const existingWork = await Work.findOne({ accessCode });
       if (!existingWork) {
         isUnique = true;
       }
+      attempts++;
+    }
+
+    if (!isUnique) {
+      throw new Error('Failed to generate unique access code');
     }
 
     // Create new work in database
     const work = new Work({
-      title: fields.title,
-      description: fields.description,
+      title: fields.title || 'Untitled',
+      description: fields.description || '',
       files: uploadedFiles,
       accessCode,
     });
@@ -120,6 +173,7 @@ exports.handler = async (event, context) => {
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify({
         message: 'Work created successfully',
         work: {
@@ -134,7 +188,11 @@ exports.handler = async (event, context) => {
     console.error('Error handling upload:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Error uploading files' }),
+      headers,
+      body: JSON.stringify({ 
+        error: 'Error uploading files',
+        details: error.message
+      }),
     };
   }
 }; 
